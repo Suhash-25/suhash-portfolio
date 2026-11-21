@@ -43,16 +43,16 @@ export const MiniSuhash3D: React.FC<MiniSuhash3DProps> = ({
       while (diff < -Math.PI) diff += Math.PI * 2;
       while (diff > Math.PI) diff -= Math.PI * 2;
 
-      // Gentle smooth turn rate (~0.5s to turn around)
-      angleRef.current += diff * 0.08;
+      // Gentle smooth turn rate (~0.8s to slowly turn around)
+      angleRef.current += diff * 0.055;
       setSmoothAngle(angleRef.current);
 
       if (charState === 'running') {
-        // Slow, gentle cartoon jogging rhythm
-        setStepPhase((prev) => prev + Math.max(runSpeed, 1.2) * dt * 4.2);
+        // Very gentle, slow cartoon jogging rhythm
+        setStepPhase((prev) => prev + Math.max(runSpeed, 0.8) * dt * 2.8);
       } else {
         // Natural calm breathing rhythm
-        setIdlePhase((prev) => prev + dt * 2.2);
+        setIdlePhase((prev) => prev + dt * 1.8);
       }
 
       animFrameRef.current = requestAnimationFrame(loop);

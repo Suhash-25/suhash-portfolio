@@ -221,17 +221,16 @@ export const SuhashCompanion: React.FC<SuhashCompanionProps> = ({ activeSection 
         const isFar = dist > 4;
         const isRunning = isFar || isScrollingRef.current;
 
-        // CALIBRATED SLOW & GENTLE PHYSICS
-        // Spring acceleration is subtle, smooth, and capped to a slow speed
-        const spring = isRunning ? 1.4 : 0.8;
-        const damping = 0.93;
+        // CALIBRATED SLOW, GENTLE & PEACEFUL PHYSICS (~65px/sec)
+        const spring = isRunning ? 0.75 : 0.45;
+        const damping = 0.92;
 
         vel.vx = (vel.vx + dx * spring * dt) * damping;
         vel.vy = (vel.vy + dy * spring * dt) * damping;
 
-        // Cap to a slow, relaxing walking/jogging speed (~1.8 px per frame = 100px/s)
+        // Cap to a relaxing, slow cartoon walking/jogging speed
         const currentSpeed = Math.sqrt(vel.vx * vel.vx + vel.vy * vel.vy);
-        const MAX_SLOW_SPEED = 2.0;
+        const MAX_SLOW_SPEED = 1.15;
         if (currentSpeed > MAX_SLOW_SPEED) {
           vel.vx = (vel.vx / currentSpeed) * MAX_SLOW_SPEED;
           vel.vy = (vel.vy / currentSpeed) * MAX_SLOW_SPEED;
@@ -242,7 +241,7 @@ export const SuhashCompanion: React.FC<SuhashCompanionProps> = ({ activeSection 
 
         const effectiveSpeed = Math.sqrt(vel.vx * vel.vx + vel.vy * vel.vy);
 
-        if (isRunning && effectiveSpeed > 0.25) {
+        if (isRunning && effectiveSpeed > 0.15) {
           // --- RUNNING SLOWLY & 360-DEGREE ORIENTATION ---
           setCharState('running');
           setRunSpeed(effectiveSpeed);
@@ -250,32 +249,32 @@ export const SuhashCompanion: React.FC<SuhashCompanionProps> = ({ activeSection 
 
           // Calculate 360-degree heading angle
           let angle = 0;
-          if (vel.vx > 0.15) {
-            angle = Math.PI * 0.38; // 3/4 turn right
-          } else if (vel.vx < -0.15) {
-            angle = -Math.PI * 0.38; // 3/4 turn left
+          if (vel.vx > 0.1) {
+            angle = Math.PI * 0.35; // 3/4 turn right
+          } else if (vel.vx < -0.1) {
+            angle = -Math.PI * 0.35; // 3/4 turn left
           }
 
-          // If moving vertically away/up, show 360 back view!
-          if (vel.vy < -0.6) {
+          // If moving vertically away/up, show 360 back view
+          if (vel.vy < -0.45) {
             angle = Math.PI * 0.95; // Rear view
-          } else if (vel.vy > 0.6) {
+          } else if (vel.vy > 0.45) {
             angle = 0; // Front view
           }
 
           setFacingAngle(angle);
 
           // Gentle footstep spark particles
-          if (Math.random() < 0.15) {
+          if (Math.random() < 0.1) {
             particleIdRef.current += 1;
             const newParticle: DustParticle = {
               id: particleIdRef.current,
-              x: pos.x + 65 + (Math.random() * 16 - 8),
+              x: pos.x + 65 + (Math.random() * 14 - 7),
               y: pos.y + 175,
-              opacity: 0.7,
+              opacity: 0.65,
               size: Math.random() * 3 + 2,
             };
-            setDustParticles((prev) => [...prev.slice(-8), newParticle]);
+            setDustParticles((prev) => [...prev.slice(-6), newParticle]);
           }
         } else {
           // --- STANDING / IDLE / FRONT VIEW WAVING ---
