@@ -3,82 +3,106 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    color-scheme: dark;
-  }
-  
   html {
     scroll-behavior: smooth;
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   }
 
   body {
-    background-color: #07090e;
-    color: #e2e8f0;
-    overflow-x: hidden;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
-  /* Custom scrollbar */
+  html.dark body {
+    background-color: #0b0f19;
+    color: #e2e8f0;
+  }
+
+  html:not(.dark) body {
+    background-color: #f8fafc;
+    color: #0f172a;
+  }
+
+  /* Custom elegant scrollbar */
   ::-webkit-scrollbar {
-    width: 8px;
+    width: 7px;
   }
   ::-webkit-scrollbar-track {
-    background: #07090e;
+    background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: #1e293b;
+    background: #94a3b8;
     border-radius: 9999px;
   }
-  ::-webkit-scrollbar-thumb:hover {
-    background: #334155;
+  .dark ::-webkit-scrollbar-thumb {
+    background: #1e293b;
   }
 }
 
 @layer utilities {
-  .text-glow {
-    text-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+  .brutal-card {
+    background: #ffffff;
+    color: #0f172a;
+    border: 2px solid #cbd5e1;
+    box-shadow: 4px 4px 0px #94a3b8;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .text-glow-cyan {
-    text-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
+  .dark .brutal-card {
+    background: rgba(17, 24, 39, 0.85);
+    color: #e2e8f0;
+    border: 2px solid #1f293d;
+    box-shadow: 4px 4px 0px #090d16;
   }
 
-  .glass-card {
-    background: rgba(15, 23, 42, 0.65);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+  .brutal-card:hover {
+    transform: translate(-2px, -2px);
   }
 
-  .glass-card-hover {
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  .glass-card-hover:hover {
-    background: rgba(22, 33, 62, 0.75);
-    border-color: rgba(99, 102, 241, 0.35);
-    transform: translateY(-4px);
-    box-shadow: 0 12px 30px -10px rgba(99, 102, 241, 0.2);
+  .dark .brutal-card:hover {
+    box-shadow: 6px 6px 0px #090d16;
+    border-color: #334155;
   }
 
-  .glass-pill {
-    background: rgba(255, 255, 255, 0.04);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+  html:not(.dark) .brutal-card:hover {
+    box-shadow: 6px 6px 0px #64748b;
+    border-color: #64748b;
   }
 
-  .bg-grid-pattern {
-    background-size: 40px 40px;
-    background-image: 
-      linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  .tape-strip {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-1deg);
+    width: 90px;
+    height: 24px;
+    background: rgba(148, 163, 184, 0.35);
+    backdrop-filter: blur(4px);
+    border-left: 2px dashed rgba(71, 85, 105, 0.5);
+    border-right: 2px dashed rgba(71, 85, 105, 0.5);
+    z-index: 20;
+    pointer-events: none;
   }
 
-  .bg-dot-pattern {
-    background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-    background-size: 24px 24px;
+  .dark .tape-strip {
+    background: rgba(248, 250, 252, 0.15);
+    border-left: 2px dashed rgba(255, 255, 255, 0.2);
+    border-right: 2px dashed rgba(255, 255, 255, 0.2);
   }
 
-  .badge-glow {
-    box-shadow: 0 0 15px rgba(99, 102, 241, 0.35);
+  .stamp-badge {
+    display: inline-flex;
+    align-items: center;
+    border: 2px dashed #64748b;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+  }
+
+  .dark .stamp-badge {
+    border-color: #475569;
   }
 }
