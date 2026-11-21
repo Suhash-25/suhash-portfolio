@@ -15,7 +15,7 @@ export const ResumeModal: React.FC<ResumeModalProps> = ({ isOpen, onClose }) => 
   const rawResumeText = `
 Suhash G
 Phone: +91 8217536806 | Email: suhasacharya0525@gmail.com
-LinkedIn: https://www.linkedin.com/in/suhash-g | GitHub: https://github.com/Suhash-25 | LeetCode: https://leetcode.com/u/l2ZtHkX4cD/
+LinkedIn: https://www.linkedin.com/in/suhash-g-9469162b7/ | GitHub: https://github.com/Suhash-25 | LeetCode: https://leetcode.com/u/l2ZtHkX4cD/
 
 PROFESSIONAL SUMMARY
 AI & Machine Learning undergraduate skilled in LLMs, Computer Vision, NLP, and Intelligent Automation. Experienced in building AI-powered applications using Python, PyTorch, TensorFlow, Agentic AI and FastAPI with proven leadership through internships, hackathons, and technical communities.

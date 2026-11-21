@@ -202,7 +202,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white/98 dark:bg-[#0B0F19]/98 border-b border-slate-300 dark:border-slate-800 px-4 pt-3 pb-6 space-y-3 transition-all shadow-xl">
+        <div className="md:hidden bg-white dark:bg-[#0B0F19] border-b border-slate-300 dark:border-slate-800 px-4 pt-3 pb-6 space-y-3 transition-all shadow-2xl max-h-[calc(100vh-4rem)] overflow-y-auto">
           <div className="flex flex-col space-y-1">
             {navLinks.map((link) => (
               <a

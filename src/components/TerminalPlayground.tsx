@@ -162,7 +162,7 @@ export const TerminalPlayground: React.FC<TerminalProps> = ({ isOpen, onClose, o
             <p className="text-white font-semibold">Direct Communication Channels:</p>
             <p>• Email: <a href="mailto:suhasacharya0525@gmail.com" className="text-cyan-400 underline">suhasacharya0525@gmail.com</a></p>
             <p>• Phone: <span className="text-emerald-400">+91 8217536806</span></p>
-            <p>• LinkedIn: <a href="https://www.linkedin.com/in/suhash-g" target="_blank" rel="noreferrer" className="text-blue-400 underline">linkedin.com/in/suhash-g</a></p>
+            <p>• LinkedIn: <a href="https://www.linkedin.com/in/suhash-g-9469162b7/" target="_blank" rel="noreferrer" className="text-blue-400 underline">linkedin.com/in/suhash-g-9469162b7/</a></p>
             <p>• GitHub: <a href="https://github.com/Suhash-25" target="_blank" rel="noreferrer" className="text-slate-300 underline">github.com/Suhash-25</a></p>
           </div>
         );
