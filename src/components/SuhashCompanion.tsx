@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Sparkles, Send, ArrowRight, Compass, Phone, Trophy, Code2 } from 'lucide-react';
+import { MiniSuhash3D } from './MiniSuhash3D';
 import { sounds } from '../utils/soundEffects';
 
 interface SuhashCompanionProps {
@@ -30,43 +31,47 @@ export const SuhashCompanion: React.FC<SuhashCompanionProps> = ({ activeSection 
     }
   ]);
 
-  // Physics & Animation State
-  const [isScrolling, setIsScrolling] = useState(false);
+  // 3D Companion Physics & State
   const [charState, setCharState] = useState<'standing' | 'running'>('standing');
-  const [facingRight, setFacingRight] = useState(false); // Default faces inward toward content
+  const [runSpeed, setRunSpeed] = useState(0);
+  const [facingAngle, setFacingAngle] = useState(0); // 360-degree rotation in radians
+  const [isWaving, setIsWaving] = useState(true);
   const [dustParticles, setDustParticles] = useState<DustParticle[]>([]);
+  const [customCallText, setCustomCallText] = useState<string | null>(null);
 
-  // Physics coordinates in viewport pixels
-  const posRef = useRef({ x: window.innerWidth - 110, y: window.innerHeight - 150 });
+  // Position references in viewport pixels
+  const posRef = useRef({
+    x: typeof window !== 'undefined' ? window.innerWidth - 170 : 800,
+    y: typeof window !== 'undefined' ? window.innerHeight - 200 : 600,
+  });
   const velRef = useRef({ vx: 0, vy: 0 });
-  const targetRef = useRef({ x: window.innerWidth - 110, y: window.innerHeight - 150 });
-  const tiltRef = useRef(0);
-  const animFrameRef = useRef<number | null>(null);
-  const lastScrollYRef = useRef(window.scrollY);
-  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const stepPhaseRef = useRef(0);
-  const idlePhaseRef = useRef(0);
-  const particleIdRef = useRef(0);
+  const targetRef = useRef({
+    x: typeof window !== 'undefined' ? window.innerWidth - 170 : 800,
+    y: typeof window !== 'undefined' ? window.innerHeight - 200 : 600,
+  });
 
-  // Dragging support
+  const isScrollingRef = useRef(false);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const animFrameRef = useRef<number | null>(null);
+  const containerNodeRef = useRef<HTMLDivElement | null>(null);
+  const particleIdRef = useRef(0);
   const isDraggingRef = useRef(false);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
 
-  // DOM node reference for direct transform manipulation (60fps performance)
-  const companionNodeRef = useRef<HTMLDivElement | null>(null);
-  const shadowNodeRef = useRef<HTMLDivElement | null>(null);
-
-  // Speech bubble per section
+  // Dynamic context speech bubble per section
   const getSectionBubble = (section: string) => {
+    if (customCallText) return customCallText;
+    if (charState === 'running') return 'On the move! 🏃‍♂️';
+
     switch (section) {
       case 'hero':
-        return 'Hey! I\'m Mini Suhash 👋';
+        return "Hey! I'm Mini Suhash 👋";
       case 'field-notes':
         return 'Reading & Building 📝';
       case 'flagship':
-        return 'Railway Live Demo ⚡';
+        return 'Flagship EIA Live ⚡';
       case 'roadmap':
-        return 'Explore my roadmap 🗺️';
+        return 'Timeline & Milestones 🗺️';
       case 'projects':
         return '5+ AI Architectures 🚀';
       case 'skills':
@@ -82,106 +87,76 @@ export const SuhashCompanion: React.FC<SuhashCompanionProps> = ({ activeSection 
     }
   };
 
-  // Target perch position calculation based on viewport and current section
+  // Target perch position across the screen based on section
   const updateTargetForSection = (section: string) => {
     if (isDraggingRef.current) return;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const isMobile = vw < 640;
 
-    // Default ground level
-    const groundOffset = isMobile ? 100 : 135;
-    let targetX = vw - (isMobile ? 85 : 125);
-    let targetY = vh - groundOffset;
+    const groundOffset = isMobile ? 180 : 210;
+    let tx = vw - (isMobile ? 150 : 190);
+    let ty = vh - groundOffset;
 
-    // Dynamic roaming positions per section
+    // Mini Suhash roams across the viewport!
     switch (section) {
       case 'hero':
-        targetX = vw - (isMobile ? 80 : 130);
-        targetY = vh - groundOffset;
+        tx = vw - (isMobile ? 140 : 200);
         break;
       case 'field-notes':
-        targetX = vw - (isMobile ? 85 : 160);
-        targetY = vh - groundOffset;
+        // Roams over to left side
+        tx = isMobile ? 20 : vw * 0.18;
         break;
       case 'flagship':
-        targetX = vw - (isMobile ? 80 : 140);
-        targetY = vh - groundOffset;
+        // Roams over to right
+        tx = vw - (isMobile ? 140 : 220);
         break;
       case 'roadmap':
-        targetX = vw - (isMobile ? 85 : 175);
-        targetY = vh - groundOffset;
+        // Runs towards center
+        tx = isMobile ? vw * 0.25 : vw * 0.48;
         break;
       case 'projects':
-        targetX = vw - (isMobile ? 80 : 135);
-        targetY = vh - groundOffset;
+        // Roams to right
+        tx = vw - (isMobile ? 140 : 210);
         break;
       case 'skills':
-        targetX = vw - (isMobile ? 85 : 165);
-        targetY = vh - groundOffset;
+        // Runs across to left
+        tx = isMobile ? 25 : vw * 0.16;
         break;
       case 'experience':
-        targetX = vw - (isMobile ? 80 : 140);
-        targetY = vh - groundOffset;
+        tx = vw - (isMobile ? 140 : 230);
         break;
       case 'achievements':
-        targetX = vw - (isMobile ? 85 : 170);
-        targetY = vh - groundOffset;
+        // Runs towards left-center
+        tx = isMobile ? 30 : vw * 0.32;
         break;
       case 'contact':
-        targetX = vw - (isMobile ? 80 : 150);
-        targetY = vh - groundOffset;
+        // Centers near contact form
+        tx = isMobile ? vw * 0.28 : vw * 0.48;
         break;
       default:
-        targetX = vw - (isMobile ? 85 : 130);
-        targetY = vh - groundOffset;
+        tx = vw - (isMobile ? 140 : 190);
     }
 
-    // Keep within viewport boundaries
-    targetX = Math.max(15, Math.min(vw - (isMobile ? 85 : 115), targetX));
-    targetY = Math.max(80, Math.min(vh - groundOffset, targetY));
+    // Keep within safe screen margins
+    tx = Math.max(10, Math.min(vw - (isMobile ? 145 : 175), tx));
+    ty = Math.max(70, Math.min(vh - groundOffset, ty));
 
-    targetRef.current = { x: targetX, y: targetY };
+    targetRef.current = { x: tx, y: ty };
   };
 
-  // Re-calculate target on section change or window resize
-  useEffect(() => {
-    updateTargetForSection(activeSection);
-  }, [activeSection]);
-
-  useEffect(() => {
-    const handleResize = () => {
-      updateTargetForSection(activeSection);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [activeSection]);
-
-  // Scroll listener: detects active scrolling and updates physics
+  // Listen to scroll to activate running physics
   useEffect(() => {
     const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      const scrollDelta = currentScrollY - lastScrollYRef.current;
-      lastScrollYRef.current = currentScrollY;
-
-      setIsScrolling(true);
-
-      // Give a tiny impulse in direction of scroll
-      if (Math.abs(scrollDelta) > 1.5) {
-        // Subtle vertical/horizontal reactive trot
-        const impulse = Math.max(-10, Math.min(10, scrollDelta * 0.15));
-        velRef.current.vy += impulse * 0.3;
-        // Run slightly forward
-        velRef.current.vx += (scrollDelta > 0 ? -1.5 : 1.5);
-      }
+      isScrollingRef.current = true;
 
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current);
       }
 
       scrollTimeoutRef.current = setTimeout(() => {
-        setIsScrolling(false);
-      }, 260);
+        isScrollingRef.current = false;
+      }, 250);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -191,100 +166,133 @@ export const SuhashCompanion: React.FC<SuhashCompanionProps> = ({ activeSection 
     };
   }, []);
 
-  // Main 60fps Physics & Animation Loop
+  // Update target when activeSection changes or window resizes
   useEffect(() => {
-    let prevTime = performance.now();
+    updateTargetForSection(activeSection);
+  }, [activeSection]);
+
+  useEffect(() => {
+    const handleResize = () => updateTargetForSection(activeSection);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [activeSection]);
+
+  // Click-to-call: user can click anywhere to call Mini Suhash!
+  useEffect(() => {
+    const handleDocumentClick = (e: MouseEvent) => {
+      // Ignore if clicking on interactive elements or inside assistant
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      if (
+        target.closest('button') ||
+        target.closest('a') ||
+        target.closest('input') ||
+        target.closest('textarea') ||
+        target.closest('#mini-suhash-container') ||
+        isAssistantOpen
+      ) {
+        return;
+      }
+
+      // Set target to clicked position (clamped to screen floor)
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const isMobile = vw < 640;
+      const clampedX = Math.max(10, Math.min(vw - (isMobile ? 145 : 175), e.clientX - 75));
+      const clampedY = Math.max(70, Math.min(vh - (isMobile ? 180 : 210), e.clientY - 90));
+
+      targetRef.current = { x: clampedX, y: clampedY };
+      setCustomCallText('Coming over! 🏃‍♂️');
+      setTimeout(() => setCustomCallText(null), 2500);
+    };
+
+    document.addEventListener('click', handleDocumentClick);
+    return () => document.removeEventListener('click', handleDocumentClick);
+  }, [isAssistantOpen]);
+
+  // Main 60fps Physics & 360-Degree Heading Loop
+  useEffect(() => {
+    let lastTime = performance.now();
 
     const loop = (time: number) => {
-      const dt = Math.min((time - prevTime) / 1000, 0.1);
-      prevTime = time;
+      const dt = Math.min((time - lastTime) / 1000, 0.1);
+      lastTime = time;
 
       const pos = posRef.current;
       const vel = velRef.current;
       const target = targetRef.current;
 
       if (!isDraggingRef.current) {
-        // Spring physics towards target
         const dx = target.x - pos.x;
         const dy = target.y - pos.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
-        const springStiffness = isScrolling ? 14 : 9;
+        const isMovingFar = dist > 6;
+        const isRunning = isMovingFar || isScrollingRef.current;
+
+        const spring = isRunning ? 10.5 : 7.0;
         const damping = 0.82;
 
-        vel.vx = (vel.vx + dx * springStiffness * dt) * damping;
-        vel.vy = (vel.vy + dy * springStiffness * dt) * damping;
+        vel.vx = (vel.vx + dx * spring * dt) * damping;
+        vel.vy = (vel.vy + dy * spring * dt) * damping;
 
         pos.x += vel.vx;
         pos.y += vel.vy;
 
-        // Facing direction based on horizontal movement
-        if (vel.vx > 0.4) {
-          setFacingRight(true);
-        } else if (vel.vx < -0.4) {
-          setFacingRight(false);
-        }
-
         const speed = Math.sqrt(vel.vx * vel.vx + vel.vy * vel.vy);
 
-        if (isScrolling || speed > 1.2 || dist > 8) {
-          // Running State
+        if (isRunning && speed > 0.4) {
+          // --- RUNNING PHYSICS & 360-DEGREE ORIENTATION ---
           setCharState('running');
-          stepPhaseRef.current += Math.max(speed, 6) * dt * 8;
-          const runBounce = Math.abs(Math.sin(stepPhaseRef.current)) * 8;
+          setRunSpeed(speed);
+          setIsWaving(false);
 
-          // Running forward lean angle
-          const targetTilt = Math.max(-16, Math.min(16, vel.vx * 2.4));
-          tiltRef.current += (targetTilt - tiltRef.current) * 0.2;
+          // Calculate 360-degree heading angle
+          let angle = 0;
+          if (vel.vx > 0.3) {
+            angle = Math.PI * 0.45; // Turn towards right
+          } else if (vel.vx < -0.3) {
+            angle = -Math.PI * 0.45; // Turn towards left
+          }
+          if (Math.abs(vel.vy) > Math.abs(vel.vx)) {
+            angle = vel.vy > 0 ? 0 : Math.PI * 0.9;
+          }
 
-          // Spawn running dust/spark particles when foot touches down
-          if (runBounce < 1.8 && Math.random() < 0.3) {
+          setFacingAngle(angle);
+
+          // Footstep spark particle emission
+          if (Math.random() < 0.28) {
             particleIdRef.current += 1;
             const newParticle: DustParticle = {
               id: particleIdRef.current,
-              x: pos.x + (facingRight ? -10 : 10) + (Math.random() * 8 - 4),
-              y: pos.y + 75,
-              opacity: 0.7,
-              size: Math.random() * 4 + 3
+              x: pos.x + 80 + (Math.random() * 20 - 10),
+              y: pos.y + 190,
+              opacity: 0.8,
+              size: Math.random() * 4 + 3,
             };
-            setDustParticles((prev) => [...prev.slice(-8), newParticle]);
-          }
-
-          if (companionNodeRef.current) {
-            companionNodeRef.current.style.transform = `translate3d(${pos.x}px, ${pos.y - runBounce}px, 0) rotate(${tiltRef.current}deg)`;
-          }
-          if (shadowNodeRef.current) {
-            const shadowScale = 1 - (runBounce / 16);
-            shadowNodeRef.current.style.transform = `scale(${Math.max(0.65, shadowScale)})`;
-            shadowNodeRef.current.style.opacity = `${0.3 + (1 - runBounce / 12) * 0.4}`;
+            setDustParticles((prev) => [...prev.slice(-10), newParticle]);
           }
         } else {
-          // Standing State
+          // --- STANDING / IDLE / FRONT WAVING ---
           setCharState('standing');
-          tiltRef.current *= 0.85; // smooth return to zero lean
+          setRunSpeed(0);
+          setFacingAngle(0); // Turns front to face camera/user
+          setIsWaving(true);
+        }
 
-          idlePhaseRef.current += dt * 3.5;
-          const idleBob = Math.sin(idlePhaseRef.current) * 2.5;
-
-          if (companionNodeRef.current) {
-            companionNodeRef.current.style.transform = `translate3d(${pos.x}px, ${pos.y + idleBob}px, 0) rotate(${tiltRef.current}deg)`;
-          }
-          if (shadowNodeRef.current) {
-            shadowNodeRef.current.style.transform = 'scale(1)';
-            shadowNodeRef.current.style.opacity = '0.7';
-          }
+        if (containerNodeRef.current) {
+          containerNodeRef.current.style.transform = `translate3d(${pos.x}px, ${pos.y}px, 0)`;
         }
       } else {
-        // Dragging state
-        if (companionNodeRef.current) {
-          companionNodeRef.current.style.transform = `translate3d(${pos.x}px, ${pos.y}px, 0) scale(1.08)`;
+        if (containerNodeRef.current) {
+          containerNodeRef.current.style.transform = `translate3d(${pos.x}px, ${pos.y}px, 0) scale(1.05)`;
         }
       }
 
       // Age dust particles
       setDustParticles((prev) =>
         prev
-          .map((p) => ({ ...p, y: p.y - 0.4, opacity: p.opacity - dt * 2.2 }))
+          .map((p) => ({ ...p, y: p.y - 0.5, opacity: p.opacity - dt * 2.5 }))
           .filter((p) => p.opacity > 0)
       );
 
@@ -295,38 +303,37 @@ export const SuhashCompanion: React.FC<SuhashCompanionProps> = ({ activeSection 
     return () => {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     };
-  }, [isScrolling, facingRight]);
+  }, []);
 
-  // Touch and Mouse Dragging Handlers
-  const handleStartDrag = (clientX: number, clientY: number) => {
+  // Dragging support
+  const handleStartDrag = (cx: number, cy: number) => {
     isDraggingRef.current = true;
     dragOffsetRef.current = {
-      x: clientX - posRef.current.x,
-      y: clientY - posRef.current.y
+      x: cx - posRef.current.x,
+      y: cy - posRef.current.y,
     };
   };
 
-  const handleMoveDrag = (clientX: number, clientY: number) => {
+  const handleMoveDrag = (cx: number, cy: number) => {
     if (!isDraggingRef.current) return;
-    const newX = clientX - dragOffsetRef.current.x;
-    const newY = clientY - dragOffsetRef.current.y;
-    posRef.current = { x: newX, y: newY };
-    targetRef.current = { x: newX, y: newY };
+    const nx = cx - dragOffsetRef.current.x;
+    const ny = cy - dragOffsetRef.current.y;
+    posRef.current = { x: nx, y: ny };
+    targetRef.current = { x: nx, y: ny };
   };
 
   const handleEndDrag = () => {
     if (isDraggingRef.current) {
       isDraggingRef.current = false;
-      // Settle on nearest safe floor
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      targetRef.current.y = Math.min(vh - (vw < 640 ? 100 : 135), Math.max(90, posRef.current.y));
-      targetRef.current.x = Math.max(20, Math.min(vw - (vw < 640 ? 85 : 120), posRef.current.x));
+      targetRef.current.x = Math.max(10, Math.min(vw - 160, posRef.current.x));
+      targetRef.current.y = Math.min(vh - 200, Math.max(70, posRef.current.y));
     }
   };
 
-  const handleCompanionTap = (e: React.MouseEvent | React.TouchEvent) => {
-    e.stopPropagation();
+  const handleCompanionTap = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     sounds.playPop();
     setIsAssistantOpen(true);
   };
@@ -336,7 +343,7 @@ export const SuhashCompanion: React.FC<SuhashCompanionProps> = ({ activeSection 
     setMessages((prev) => [
       ...prev,
       { sender: 'user', text: question },
-      { sender: 'assistant', text: answer }
+      { sender: 'assistant', text: answer },
     ]);
   };
 
@@ -372,7 +379,7 @@ export const SuhashCompanion: React.FC<SuhashCompanionProps> = ({ activeSection 
     setMessages((prev) => [
       ...prev,
       { sender: 'user', text: query },
-      { sender: 'assistant', text: reply }
+      { sender: 'assistant', text: reply },
     ]);
   };
 
@@ -387,7 +394,7 @@ export const SuhashCompanion: React.FC<SuhashCompanionProps> = ({ activeSection 
 
   return (
     <>
-      {/* Running Footstep Dust / Spark Particles */}
+      {/* Running Footstep Sparks / Dust Particles */}
       {dustParticles.map((p) => (
         <div
           key={p.id}
@@ -399,17 +406,16 @@ export const SuhashCompanion: React.FC<SuhashCompanionProps> = ({ activeSection 
             height: `${p.size}px`,
             opacity: p.opacity,
             transform: 'translate(-50%, -50%)',
-            transition: 'opacity 0.1s linear'
           }}
         />
       ))}
 
-      {/* Mini Suhash Physical 3D Cartoon Companion Entity */}
+      {/* Mini Suhash Physical 3D Character Container */}
       <div
-        ref={companionNodeRef}
+        id="mini-suhash-container"
+        ref={containerNodeRef}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        onClick={handleCompanionTap}
         onTouchStart={(e) => {
           if (e.touches.length === 1) {
             handleStartDrag(e.touches[0].clientX, e.touches[0].clientY);
@@ -434,21 +440,19 @@ export const SuhashCompanion: React.FC<SuhashCompanionProps> = ({ activeSection 
             window.addEventListener('mouseup', onMouseUp);
           }
         }}
-        className="fixed top-0 left-0 z-40 cursor-pointer select-none group flex flex-col items-center pointer-events-auto touch-none"
+        className="fixed top-0 left-0 z-40 select-none group flex flex-col items-center pointer-events-auto touch-none"
         style={{
-          width: '90px',
+          width: '160px',
+          height: '210px',
           willChange: 'transform',
         }}
-        title="I am Mini Suhash! Tap me anytime for assistance."
       >
-        {/* Dynamic Context Speech Bubble */}
+        {/* Real-time Dynamic Context Speech Bubble */}
         <div
-          className={`absolute -top-11 z-50 whitespace-nowrap px-3 py-1 rounded-full bg-white dark:bg-[#0f172a] border-2 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-[11px] font-mono font-bold shadow-brutal-sm flex items-center gap-1.5 transition-all duration-300 pointer-events-none ${
+          onClick={handleCompanionTap}
+          className={`absolute -top-7 z-50 whitespace-nowrap px-3 py-1 rounded-full bg-white dark:bg-[#0f172a] border-2 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-[11px] font-mono font-bold shadow-brutal-sm flex items-center gap-1.5 transition-all duration-300 cursor-pointer ${
             isHovered ? 'scale-110 -translate-y-1' : ''
           }`}
-          style={{
-            transform: facingRight ? 'scaleX(1)' : 'scaleX(1)', // Always readable text
-          }}
         >
           <span
             className={`w-2 h-2 rounded-full ${
@@ -458,43 +462,21 @@ export const SuhashCompanion: React.FC<SuhashCompanionProps> = ({ activeSection 
           <span>{getSectionBubble(activeSection)}</span>
         </div>
 
-        {/* 3D Cartoon Character Cutout Container */}
-        <div
-          className="relative transition-transform duration-150"
-          style={{
-            transform: facingRight ? 'scaleX(-1)' : 'scaleX(1)', // Flips image to run left/right naturally
-          }}
-        >
-          {/* 3D Character Cutout Image */}
-          <img
-            src="/images/mini-suhash.png"
-            alt="Mini Suhash 3D Companion"
-            className="w-20 sm:w-24 h-auto object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.35)] transition-all duration-200 group-hover:scale-105"
-            draggable={false}
-          />
-
-          {/* Running State Wind/Speed Streaks */}
-          {charState === 'running' && (
-            <div className="absolute -left-2 top-1/2 -translate-y-1/2 flex flex-col gap-1 opacity-70 pointer-events-none">
-              <span className="w-3 h-0.5 bg-amber-400 rounded-full animate-pulse" />
-              <span className="w-4 h-0.5 bg-cyan-400 rounded-full animate-pulse delay-75" />
-            </div>
-          )}
-
-          {/* Cute Sparkle Star on Waving Hand */}
-          <div className="absolute top-4 -right-1 text-amber-400 dark:text-amber-300 animate-bounce pointer-events-none">
-            <Sparkles className="w-4 h-4 drop-shadow" />
-          </div>
-        </div>
-
-        {/* Dynamic Ground Shadow (Stretches when standing, compresses when running/jumping) */}
-        <div
-          ref={shadowNodeRef}
-          className="w-14 h-2.5 bg-black/30 dark:bg-black/60 rounded-full blur-[2px] mt-0.5 transition-transform duration-75"
+        {/* Real-time 3D WebGL Model */}
+        <MiniSuhash3D
+          charState={charState}
+          runSpeed={runSpeed}
+          facingAngle={facingAngle}
+          isWaving={isWaving}
+          onCharacterClick={handleCompanionTap}
+          scale={typeof window !== 'undefined' && window.innerWidth < 640 ? 0.85 : 1.0}
         />
 
-        {/* "Mini Suhash" Cute Name Tag Badge */}
-        <div className="mt-1 px-2 py-0.5 rounded-full bg-slate-900/90 dark:bg-slate-100/90 text-white dark:text-slate-900 font-mono text-[9px] font-extrabold uppercase tracking-wider shadow-sm border border-slate-700 dark:border-slate-300">
+        {/* Status Pill Badge */}
+        <div
+          onClick={handleCompanionTap}
+          className="cursor-pointer -mt-3 px-2 py-0.5 rounded-full bg-slate-900/90 dark:bg-slate-100/90 text-white dark:text-slate-900 font-mono text-[9px] font-extrabold uppercase tracking-wider shadow-sm border border-slate-700 dark:border-slate-300"
+        >
           {charState === 'running' ? 'Running ⚡' : 'Mini Suhash ✦'}
         </div>
       </div>
@@ -518,11 +500,11 @@ export const SuhashCompanion: React.FC<SuhashCompanionProps> = ({ activeSection 
                   <div className="flex items-center gap-1.5 font-display font-bold text-slate-900 dark:text-white text-base">
                     <span>Mini Suhash</span>
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 border border-emerald-400 dark:border-emerald-600 text-emerald-800 dark:text-emerald-400 font-bold">
-                      AI Guide
+                      3D AI Guide
                     </span>
                   </div>
                   <div className="text-[11px] font-mono text-slate-600 dark:text-slate-400">
-                    Your interactive physics companion
+                    360° Real-time 3D physics companion
                   </div>
                 </div>
               </div>
