@@ -14,7 +14,7 @@ export const personalInfo = {
   },
   socials: {
     github: "https://github.com/Suhash-25",
-    linkedin: "https://www.linkedin.com/in/suhash-g",
+    linkedin: "https://www.linkedin.com/in/suhash-g-9469162b7/",
     leetcode: "https://leetcode.com/u/l2ZtHkX4cD/",
     email: "mailto:suhasacharya0525@gmail.com",
     phone: "tel:+918217536806"
